@@ -13,10 +13,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+// MongoDB connection with increased timeouts
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 30000,   // 30 seconds to find server
+      connectTimeoutMS: 30000,           // 30 seconds to establish connection
+      socketTimeoutMS: 45000,            // 45 seconds for socket inactivity
+      family: 4                          // Force IPv4 (avoids some DNS issues)
+    });
+    console.log('✅ MongoDB connected');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+    // Don't exit the process on Render – let it retry later
+    setTimeout(connectDB, 5000);
+  }
+};
+
+connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -27,7 +41,7 @@ app.use('/api/bookings', bookingRoutes);
 // Test route
 app.get('/', (req, res) => res.send('Salon API is running'));
 
-// Optional seed admin (kept for convenience)
+// Optional: seed admin (useful for first deployment)
 app.post('/seed-admin', async (req, res) => {
   const bcrypt = require('bcryptjs');
   const { User } = require('./model/models');
@@ -50,4 +64,4 @@ app.post('/seed-admin', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
