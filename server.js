@@ -16,7 +16,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection with increased timeouts
+// MongoDB connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
@@ -26,6 +26,34 @@ const connectDB = async () => {
       family: 4
     });
     console.log('âœ… MongoDB connected');
+    
+    // Initialize default data
+    const { SalonInfo, Gallery, Review } = require('./model/models');
+    
+    // Create default salon info if not exists
+    const info = await SalonInfo.findOne();
+    if (!info) {
+      const defaultInfo = new SalonInfo({
+        name: 'Salon Bliss',
+        description: 'Premium salon services in Nairobi',
+        address: '123 Salon Street, Nairobi, Kenya',
+        phone: '+254 700 000 000',
+        email: 'info@salonbliss.com',
+        coordinates: { lat: -1.286389, lng: 36.817223 },
+        workingHours: {
+          monday: '9:00 AM - 8:00 PM',
+          tuesday: '9:00 AM - 8:00 PM',
+          wednesday: '9:00 AM - 8:00 PM',
+          thursday: '9:00 AM - 8:00 PM',
+          friday: '9:00 AM - 8:00 PM',
+          saturday: '9:00 AM - 8:00 PM',
+          sunday: '10:00 AM - 6:00 PM'
+        }
+      });
+      await defaultInfo.save();
+      console.log('âœ… Default salon info created');
+    }
+    
   } catch (err) {
     console.error('âŒ MongoDB connection error:', err.message);
     setTimeout(connectDB, 5000);
@@ -46,7 +74,7 @@ app.use('/api/salon-info', salonInfoRoutes);
 // Test route
 app.get('/', (req, res) => res.send('Salon API is running'));
 
-// Seed admin (kept for convenience)
+// Seed admin
 app.post('/seed-admin', async (req, res) => {
   const bcrypt = require('bcryptjs');
   const { User } = require('./model/models');
@@ -69,4 +97,4 @@ app.post('/seed-admin', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`ðŸš€ Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`íº€ Server running on port ${PORT}`));
