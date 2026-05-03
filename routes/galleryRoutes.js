@@ -7,7 +7,9 @@ const {
   createGalleryPost,
   updateGalleryPost,
   deleteGalleryPost,
-  toggleLike
+  toggleLike,
+  addComment,
+  deleteComment
 } = require('../controllers/galleryController');
 
 router.route('/')
@@ -20,5 +22,7 @@ router.route('/:id')
   .delete(protect, adminOnly, deleteGalleryPost);
 
 router.post('/:id/like', protect, toggleLike);
+router.post('/:id/comments', protect, addComment);
+router.delete('/:postId/comments/:commentId', protect, deleteComment);
 
 module.exports = router;

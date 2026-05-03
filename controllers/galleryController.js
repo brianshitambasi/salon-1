@@ -7,7 +7,8 @@ const getGalleryPosts = async (req, res) => {
   try {
     const posts = await Gallery.find({ isActive: true })
       .sort({ createdAt: -1 })
-      .populate('createdBy', 'name');
+      .populate('createdBy', 'name')
+      .populate('comments.userId', 'name');
     res.json(posts);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -19,7 +20,9 @@ const getGalleryPosts = async (req, res) => {
 // @access  Public
 const getGalleryPostById = async (req, res) => {
   try {
-    const post = await Gallery.findById(req.params.id).populate('createdBy', 'name');
+    const post = await Gallery.findById(req.params.id)
+      .populate('createdBy', 'name')
+      .populate('comments.userId', 'name');
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
@@ -111,11 +114,70 @@ const toggleLike = async (req, res) => {
   }
 };
 
+// @desc    Add comment to gallery post
+// @route   POST /api/gallery/:id/comments
+// @access  Private
+const addComment = async (req, res) => {
+  try {
+    const post = await Gallery.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    
+    const comment = {
+      userId: req.user.id,
+      text: req.body.text,
+      createdAt: new Date()
+    };
+    
+    post.comments = post.comments || [];
+    post.comments.push(comment);
+    await post.save();
+    
+    // Populate the user info for the new comment
+    await post.populate('comments.userId', 'name');
+    
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Delete comment from gallery post (admin or comment owner)
+// @route   DELETE /api/gallery/:postId/comments/:commentId
+// @access  Private
+const deleteComment = async (req, res) => {
+  try {
+    const post = await Gallery.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+    
+    // Check if user is admin or comment owner
+    if (comment.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    comment.remove();
+    await post.save();
+    res.json({ message: 'Comment deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getGalleryPosts,
   getGalleryPostById,
   createGalleryPost,
   updateGalleryPost,
   deleteGalleryPost,
-  toggleLike
+  toggleLike,
+  addComment,
+  deleteComment
 };
