@@ -10,15 +10,23 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['customer', 'admin'], default: 'customer' },
 }, { timestamps: true });
 
-// ------------------- Service -------------------
+// ------------------- Service (Enhanced with images and details) -------------------
 const serviceSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   price: { type: Number, required: true, min: 0 },
   durationMinutes: { type: Number, required: true, min: 5 },
+  // New fields
+  imageUrl: { type: String },
+  category: { type: String, enum: ['hair', 'nails', 'spa', 'makeup', 'waxing', 'other'], default: 'hair' },
+  tags: [{ type: String }],
+  popular: { type: Boolean, default: false },
+  discount: { type: Number, default: 0, min: 0, max: 100 },
+  benefits: [{ type: String }],
+  beforeImage: { type: String },
+  afterImage: { type: String },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
-
 // ------------------- Staff (Enhanced) -------------------
 const staffSchema = new mongoose.Schema({
   name: { type: String, required: true },
