@@ -50,9 +50,14 @@ const staffSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// ------------------- Booking -------------------
+// ------------------- Booking (Updated for Guest/Customer) -------------------
 const bookingSchema = new mongoose.Schema({
-  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  // Guest/Customer Info
+  customerName: { type: String, required: true },
+  customerEmail: { type: String, required: true },
+  customerPhone: { type: String, required: true },
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  // Booking Details
   serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
   staffId: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff', required: true },
   date: { type: String, required: true },
@@ -63,6 +68,9 @@ const bookingSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
     default: 'pending'
   },
+  notes: { type: String, default: '' },
+  isRead: { type: Boolean, default: false },  // For admin notifications
+  bookedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 bookingSchema.index({ staffId: 1, date: 1, startTime: 1 }, { unique: true });
