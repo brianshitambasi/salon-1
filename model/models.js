@@ -78,7 +78,6 @@ const gallerySchema = new mongoose.Schema({
   }],
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
-
 // ------------------- Review (NEW) -------------------
 const reviewSchema = new mongoose.Schema({
   customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

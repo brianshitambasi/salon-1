@@ -144,36 +144,46 @@ const addComment = async (req, res) => {
   }
 };
 
-// @desc    Delete comment from gallery post (admin or comment owner)
+// @desc    Delete comment from gallery post
 // @route   DELETE /api/gallery/:postId/comments/:commentId
-// @access  Private
+// @access  Private (Admin or comment owner)
 const deleteComment = async (req, res) => {
   try {
-    const post = await Gallery.findById(req.params.postId);
+    const { postId, commentId } = req.params;
+    
+    const post = await Gallery.findById(postId);
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
     
-    const comment = post.comments.id(req.params.commentId);
+    // Find the comment
+    const comment = post.comments.id(commentId);
     if (!comment) {
       return res.status(404).json({ message: 'Comment not found' });
     }
     
-    if (comment.userId.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
+    // Check authorization: admin or comment owner
+    const isAdmin = req.user.role === 'admin';
+    const isOwner = comment.userId.toString() === req.user.id;
+    
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: 'Not authorized to delete this comment' });
     }
     
-    comment.remove();
+    // Remove the comment using pull
+    post.comments.pull({ _id: commentId });
     await post.save();
-    res.json({ message: 'Comment deleted' });
+    
+    res.json({ message: 'Comment deleted successfully' });
   } catch (err) {
+    console.error('Delete comment error:', err);
     res.status(500).json({ message: err.message });
   }
 };
 
 // @desc    Add rating to gallery post
 // @route   POST /api/gallery/:id/ratings
-// @access  Private (Customers only)
+// @access  Private
 const addRating = async (req, res) => {
   try {
     const post = await Gallery.findById(req.params.id);
@@ -186,16 +196,14 @@ const addRating = async (req, res) => {
       return res.status(400).json({ message: 'Rating must be between 1 and 5' });
     }
     
-    // Check if user already rated this post
+    // Check if user already rated
     const existingRatingIndex = post.ratings.findIndex(
       r => r.userId.toString() === req.user.id
     );
     
     if (existingRatingIndex !== -1) {
-      // Update existing rating
       post.ratings[existingRatingIndex].value = rating;
     } else {
-      // Add new rating
       post.ratings.push({
         userId: req.user.id,
         value: rating

@@ -13,15 +13,16 @@ const {
   addRating
 } = require('../controllers/galleryController');
 
-router.route('/')
-  .get(getGalleryPosts)
-  .post(protect, adminOnly, createGalleryPost);
+// Public routes
+router.get('/', getGalleryPosts);
+router.get('/:id', getGalleryPostById);
 
-router.route('/:id')
-  .get(getGalleryPostById)
-  .put(protect, adminOnly, updateGalleryPost)
-  .delete(protect, adminOnly, deleteGalleryPost);
+// Admin only routes
+router.post('/', protect, adminOnly, createGalleryPost);
+router.put('/:id', protect, adminOnly, updateGalleryPost);
+router.delete('/:id', protect, adminOnly, deleteGalleryPost);
 
+// Authenticated user routes
 router.post('/:id/like', protect, toggleLike);
 router.post('/:id/comments', protect, addComment);
 router.delete('/:postId/comments/:commentId', protect, deleteComment);
