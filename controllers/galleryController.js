@@ -8,7 +8,8 @@ const getGalleryPosts = async (req, res) => {
     const posts = await Gallery.find({ isActive: true })
       .sort({ createdAt: -1 })
       .populate('createdBy', 'name')
-      .populate('comments.userId', 'name');
+      .populate('comments.userId', 'name')
+      .populate('ratings.userId', 'name');
     res.json(posts);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -22,7 +23,8 @@ const getGalleryPostById = async (req, res) => {
   try {
     const post = await Gallery.findById(req.params.id)
       .populate('createdBy', 'name')
-      .populate('comments.userId', 'name');
+      .populate('comments.userId', 'name')
+      .populate('ratings.userId', 'name');
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
@@ -134,7 +136,6 @@ const addComment = async (req, res) => {
     post.comments.push(comment);
     await post.save();
     
-    // Populate the user info for the new comment
     await post.populate('comments.userId', 'name');
     
     res.json(post);
@@ -158,7 +159,6 @@ const deleteComment = async (req, res) => {
       return res.status(404).json({ message: 'Comment not found' });
     }
     
-    // Check if user is admin or comment owner
     if (comment.userId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }
@@ -166,6 +166,49 @@ const deleteComment = async (req, res) => {
     comment.remove();
     await post.save();
     res.json({ message: 'Comment deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Add rating to gallery post
+// @route   POST /api/gallery/:id/ratings
+// @access  Private (Customers only)
+const addRating = async (req, res) => {
+  try {
+    const post = await Gallery.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    
+    const { rating } = req.body;
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+    
+    // Check if user already rated this post
+    const existingRatingIndex = post.ratings.findIndex(
+      r => r.userId.toString() === req.user.id
+    );
+    
+    if (existingRatingIndex !== -1) {
+      // Update existing rating
+      post.ratings[existingRatingIndex].value = rating;
+    } else {
+      // Add new rating
+      post.ratings.push({
+        userId: req.user.id,
+        value: rating
+      });
+    }
+    
+    await post.save();
+    await post.populate('ratings.userId', 'name');
+    
+    res.json({ 
+      message: 'Rating submitted successfully',
+      ratings: post.ratings
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -179,5 +222,6 @@ module.exports = {
   deleteGalleryPost,
   toggleLike,
   addComment,
-  deleteComment
+  deleteComment,
+  addRating
 };

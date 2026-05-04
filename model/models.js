@@ -59,7 +59,7 @@ const bookingSchema = new mongoose.Schema({
 
 bookingSchema.index({ staffId: 1, date: 1, startTime: 1 }, { unique: true });
 
-// ------------------- Gallery (with Comments) -------------------
+// ------------------- Gallery (with Comments & Ratings) -------------------
 const gallerySchema = new mongoose.Schema({
   title: { type: String, required: true },
   imageUrl: { type: String, required: true },
@@ -71,6 +71,10 @@ const gallerySchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     text: { type: String, required: true },
     createdAt: { type: Date, default: Date.now }
+  }],
+  ratings: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    value: { type: Number, min: 1, max: 5 }
   }],
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
